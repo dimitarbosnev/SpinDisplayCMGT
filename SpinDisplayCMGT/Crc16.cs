@@ -8,7 +8,7 @@ namespace SpinDisplayCMGT
         // Token: 0x060003D6 RID: 982 RVA: 0x00023C34 File Offset: 0x00021E34
         public static byte[] GetCrc16Bytes(byte[] data, int fromPos, int length)
         {
-            return TypeConversion.UIntToBytes(Crc16.get(data, fromPos, length));
+            return TypeConversion.UIntToBytes(get(data, fromPos, length));
         }
 
         // Token: 0x060003D7 RID: 983 RVA: 0x00023C4C File Offset: 0x00021E4C

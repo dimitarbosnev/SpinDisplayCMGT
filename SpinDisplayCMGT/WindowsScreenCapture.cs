@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace SpinDisplayCMGT
 {
@@ -35,50 +33,80 @@ namespace SpinDisplayCMGT
         [DllImport("user32.dll")]
         private static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
 
-        private const int SRCCOPY = 0x00CC0020;
-
-        public static RawImage CaptureScreen(int width, int height)
-        {
-            IntPtr desktopWnd = GetDesktopWindow();
-            IntPtr desktopDC = GetDC(desktopWnd);
-            IntPtr memoryDC = CreateCompatibleDC(desktopDC);
-
-            int screenWidth = GetSystemMetrics(0);
-            int scrrenHeight = GetSystemMetrics(1);
-
-            IntPtr hBitmap = CreateCompatibleBitmap(desktopDC, width, height);
-            SelectObject(memoryDC, hBitmap);
-
-            BitBlt(memoryDC, 0, 0, width, height, desktopDC, 0, 0, SRCCOPY);
-
-            // Copy bitmap bits into managed memory
-            var bmpInfo = new BITMAPINFOHEADER
-            {
-                biSize = Marshal.SizeOf(typeof(BITMAPINFOHEADER)),
-                biWidth = width,
-                biHeight = -height, // top-down bitmap
-                biPlanes = 1,
-                biBitCount = 32,
-                biCompression = 0
-            };
-
-            byte[] pixels = new byte[width * height * 4];
-            GetDIBits(memoryDC, hBitmap, 0, (uint)height, pixels, ref bmpInfo, 0);
-
-            // Cleanup
-            DeleteObject(hBitmap);
-            DeleteDC(memoryDC);
-            ReleaseDC(desktopWnd, desktopDC);
-
-            return new RawImage(width, height, pixels);
-        }
 
         [DllImport("user32.dll")]
         private static extern int GetSystemMetrics(int nIndex);
 
         [DllImport("gdi32.dll")]
-        private static extern int GetDIBits(IntPtr hdc, IntPtr hbmp, uint uStartScan,
-            uint cScanLines, byte[] lpvBits, ref BITMAPINFOHEADER lpbi, uint uUsage);
+        static extern int GetDIBits(IntPtr hdc, IntPtr hbmp, uint uStartScan,
+        uint cScanLines, IntPtr lpvBits, [In, Out] ref BITMAPINFOHEADER lpbi, uint uUsage);
+
+
+
+
+        private const int SRCCOPY = 0x00CC0020;
+        private const int SM_CXSCREEN = 0;
+        private const int SM_CYSCREEN = 1;
+
+        public static Size size;
+        public static Point upperSrc;
+        public static Point upperDst;
+        static WindowsScreenCapture()
+        {
+            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+            Console.WriteLine(string.Format("width:{0},height:{1}", screenWidth, screenHeight));
+            int num = (screenWidth > screenHeight) ? screenHeight : screenWidth;
+            num = ((num > 672) ? 672 : num);
+            upperSrc = new Point((screenWidth - num) / 2, (screenHeight - num) / 2);
+            upperDst = new Point(0, 0);
+            Console.WriteLine($"InternalRes: {num}");
+            size = new Size(num, num);
+        }
+        public static RawImage CaptureScreenRawImage()
+        {
+            IntPtr hScreenDC = GetDC(IntPtr.Zero);
+            IntPtr hMemDC = CreateCompatibleDC(hScreenDC);
+
+            IntPtr hBitmap = CreateCompatibleBitmap(hScreenDC, size.Width, size.Height);
+            IntPtr hOld = SelectObject(hMemDC, hBitmap);
+
+            BitBlt(hMemDC, 0, 0, size.Width, size.Height, hScreenDC, 0, 0, SRCCOPY);
+
+            SelectObject(hMemDC, hOld);
+
+            // copy bitmap bits into memory
+            var bmpInfo = new BITMAPINFOHEADER();
+            bmpInfo.biSize = Marshal.SizeOf(typeof(BITMAPINFOHEADER));
+            bmpInfo.biWidth = size.Width;
+            bmpInfo.biHeight = -size.Height; // flip vertically
+            bmpInfo.biPlanes = 1;
+            bmpInfo.biBitCount = 24;
+            bmpInfo.biCompression = 0; // BI_RGB
+
+            int bytes = size.Width * size.Height * 3;
+            byte[] data = new byte[bytes];
+            GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+            GetDIBits(hMemDC, hBitmap, 0, (uint)size.Height, handle.AddrOfPinnedObject(), ref bmpInfo, 0);
+            handle.Free();
+
+            DeleteObject(hBitmap);
+            DeleteDC(hMemDC);
+            ReleaseDC(IntPtr.Zero, hScreenDC);
+
+            return new RawImage(size.Width,size.Height, data);
+        }
+
+        public static Bitmap CaptureScreenBitmp()
+        {
+            Bitmap bitmap = new Bitmap(size.Width, size.Height);
+            Graphics graphics = Graphics.FromImage(bitmap);
+            graphics.CopyFromScreen(upperSrc, upperDst, size);
+            graphics.Dispose();
+            return bitmap;
+        }
+
+
 
         [StructLayout(LayoutKind.Sequential)]
         private struct BITMAPINFOHEADER

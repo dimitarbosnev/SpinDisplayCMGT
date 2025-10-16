@@ -1,29 +1,55 @@
-﻿namespace SpinDisplayCMGT
+﻿using System.Drawing;
+
+namespace SpinDisplayCMGT
 {
+
+
     internal class Program
     {
+        private static readonly object imagelock = new object();
         static void Main(string[] args)
         {
             FanCMGT.Connect();
             FanCMGT.PowerOn();
-            FanCMGT.StartProjection();
+
             Console.WriteLine("Press 'q' to quit.");
             bool running = true;
-            RawImage IMAGE;
+            RawImage image = WindowsScreenCapture.CaptureScreenRawImage();
             while (running)
             {
                 if (Console.KeyAvailable)
                 {
                     ConsoleKeyInfo key = Console.ReadKey(intercept: true);
-                    if (key.Key == ConsoleKey.Q)
-                        running = false;
+                    switch (key.Key)
+                    {
+                        case ConsoleKey.Q:
+                            running = false;
+                            continue;
+                            break;
+                        case ConsoleKey.E:
+                            FanCMGT.EndProjection();
+                            break;
+                        case ConsoleKey.W:
+                            FanCMGT.StartProjection();
+                            break;
+                        case ConsoleKey.R:
+                            FanCMGT.PowerOn();
+                            break;
+                        case ConsoleKey.T:
+                            FanCMGT.PowerOff();
+                            break;
+                    }
                 }
-                IMAGE = WindowsScreenCapture.CaptureScreen(FanCMGT.Width, FanCMGT.Width);
-                FanCMGT.ProjectOnDisplay(in IMAGE);
+                if (FanCMGT.isProjecting)
+                {
+                    lock (imagelock)
+                    {
+                        image = WindowsScreenCapture.CaptureScreenRawImage();
+                        FanCMGT.ProjectOnDisplay(in image);
+                    }
+                }
             }
-           FanCMGT.EndProjection();
-           FanCMGT.PowerOff();
-           FanCMGT.Disconnect();
+            FanCMGT.Disconnect();
         }
     }
 }
