@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SpinDisplayCMGT
+namespace CMGT
 {
     // Token: 0x02000043 RID: 67
     internal class Crc16

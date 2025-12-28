@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 
 
-namespace SpinDisplayCMGT
+namespace CMGT
 {
-    public static class TurboLibjpeg
+    public static class Jpeg
     {
 
         [DllImport("turbojpeg.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "tjDestroy")]
@@ -46,47 +44,6 @@ namespace SpinDisplayCMGT
             fileStream.Write(array, 0, array.Length);
             fileStream.Close();
         }
-        public unsafe static byte[] BitmapToJpeg(Bitmap bitmap)
-        {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-            int num = width * PixelSizes[TJPixelFormats.TJPF_BGR];
-            PixelFormat pixelFormat = bitmap.PixelFormat;
-            byte[] array = new byte[num * height];
-            int num2 = 0;
-            BitmapData bitmapData = bitmap.LockBits(new Rectangle(new Point(0, 0), new Size(width, height)), ImageLockMode.ReadWrite, pixelFormat);
-            byte* ptr = (byte*)((void*)bitmapData.Scan0);
-            for (int i = 0; i < width * height * 4; i++)
-            {
-                if ((i + 1) % 4 > 0)
-                {
-                    array[num2] = ptr[i];
-                    num2++;
-                }
-            }
-            bitmap.UnlockBits(bitmapData);
-            IntPtr handle = tjInitCompress();
-            IntPtr rgbBuf = IntPtr.Zero;
-            fixed (byte* ptr2 = &array[0])
-            {
-                void* value = (void*)ptr2;
-                rgbBuf = (IntPtr)value;
-            }
-            byte[] result = tjCompress(handle, rgbBuf, width, num, height, (int)TJPixelFormats.TJPF_BGR, 2, 30, 0);
-            tjDestroy(handle);
-            bitmap.Dispose();
-            return result;
-        }
-
-        public unsafe static void BitmapSaveToJpeg(Bitmap bitmap, string path)
-        {
-            byte[] array = BitmapToJpeg(bitmap);
-            FileStream fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
-            fileStream.Seek(0L, SeekOrigin.Begin);
-            fileStream.Write(array, 0, array.Length);
-            fileStream.Close();
-        }
-
         public static byte[] tjCompress(IntPtr handle, IntPtr rgbBuf, int width, int pitch, int height, int pixelFormat, int jpegSubsamp, int jpegQual, int flags)
         {
             IntPtr zero = IntPtr.Zero;

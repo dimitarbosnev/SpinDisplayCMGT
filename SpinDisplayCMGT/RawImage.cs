@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using CMGT;
 
 namespace SpinDisplayCMGT
 {
@@ -62,7 +60,7 @@ namespace SpinDisplayCMGT
 
         public void SaveAsJpeg(string path)
         {
-            TurboLibjpeg.BytesSaveToJpeg(Pixels, Width, Height, path, 30);
+            Jpeg.BytesSaveToJpeg(Pixels, Width, Height, path, 30);
         }
 
     }

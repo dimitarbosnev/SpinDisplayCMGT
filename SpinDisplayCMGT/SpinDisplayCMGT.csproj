@@ -27,9 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="turbojpeg.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\CMGTFan\CMGTFan.csproj" />
   </ItemGroup>
 
 </Project>

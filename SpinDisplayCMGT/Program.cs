@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
+using CMGT;
 
 namespace SpinDisplayCMGT
 {
@@ -9,12 +10,14 @@ namespace SpinDisplayCMGT
         private static readonly object imagelock = new object();
         static void Main(string[] args)
         {
-            FanCMGT.Connect();
-            FanCMGT.PowerOn();
+            Fan.Connect();
+            Fan.PowerOn();
 
             Console.WriteLine("Press 'q' to quit.");
             bool running = true;
-            RawImage image = WindowsScreenCapture.CaptureScreenRawImage();
+            byte[] array = null;
+            Stopwatch sw = Stopwatch.StartNew();
+            double lastTime = 0.0;
             while (running)
             {
                 if (Console.KeyAvailable)
@@ -27,29 +30,37 @@ namespace SpinDisplayCMGT
                             continue;
                             break;
                         case ConsoleKey.E:
-                            FanCMGT.EndProjection();
+                            Fan.EndProjection();
                             break;
                         case ConsoleKey.W:
-                            FanCMGT.StartProjection();
+                            Fan.StartProjection();
                             break;
                         case ConsoleKey.R:
-                            FanCMGT.PowerOn();
+                            Fan.PowerOn();
                             break;
                         case ConsoleKey.T:
-                            FanCMGT.PowerOff();
+                            Fan.PowerOff();
                             break;
                     }
                 }
-                if (FanCMGT.isProjecting)
+                if (Fan.isProjecting)
                 {
                     lock (imagelock)
                     {
-                        image = WindowsScreenCapture.CaptureScreenRawImage();
-                        FanCMGT.ProjectOnDisplay(in image);
+                        RawImage image = WindowsScreenCapture.CaptureScreenRawImage();
+                        array = Jpeg.bytesToJpeg(image.Pixels, image.Width, image.Height, 30);
+                        double now = sw.Elapsed.TotalMilliseconds;
+                        double deltaTime = now - lastTime;
+                        if (deltaTime >= 80.0) 
+                        {
+                            lastTime = now;
+                   
+                            Fan.ProjectOnDisplay(in array);
+                        }
                     }
                 }
             }
-            FanCMGT.Disconnect();
+            Fan.Disconnect();
         }
     }
 }

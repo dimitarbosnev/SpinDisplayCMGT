@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SpinDisplayCMGT
+namespace CMGT
 {
     public static class TypeConversion
     {
